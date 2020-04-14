@@ -10,6 +10,16 @@ import urllib3
 
 MAX_ERRORS = 1000
 
+DAILY_STAT_URL = "daily"
+HOURLY_STAT_URL = "hourly"
+MINUTELY_STAT_URL = "minutely"
+
+URL_SEGMENTS = {
+    DAILY_STAT_URL: 'stat/report/daily.site',
+    HOURLY_STAT_URL: 'stat/report/hourly.site',
+    MINUTELY_STAT_URL: 'stat/report/5minutes.site'
+}
+
 class Controller:
     """Provides an interface to the Ubqiuiti Unifi API"""
     # pylint: disable=too-many-arguments
@@ -124,19 +134,13 @@ class Controller:
                         start: Union[float, None] = None,
                         end: Union[float, None] = None,
                         stat_attributes: list = None) -> Union[MutableSequence, None]:
-        """Will return either a list of time-sorted daily stats or None"""
+        """Will return either a list of time-sorted daily stats or None.
+
+        The start and end parameters default to give the last month's worth of daily usage.
+        """
         if not self._logged_in:
             return None
-        stats_url = f'stat/report/daily.site'
-
-        if not stat_attributes:
-            stat_attributes = [
-                'wan-tx_bytes',
-                'wan-rx_bytes',
-                "time"
-            ]
-        if "time" not in stat_attributes:
-            stat_attributes.append("time")
+        stats_url = URL_SEGMENTS[DAILY_STAT_URL]
         if not end or end <= 0.0:
             end = time.time()
 
@@ -155,6 +159,83 @@ class Controller:
         # Time is in milliseconds since the Epoch
         end *= 1000
         start *= 1000
+        return self._get_stats(stats_url, start, end, stat_attributes=stat_attributes)
+
+    def get_hourly_stats(self,
+                         start: Union[float, None] = None,
+                         end: Union[float, None] = None,
+                         stat_attributes: list = None) -> Union[MutableSequence, None]:
+        """Will return either a list of time-sorted hourly stats or None.
+
+        The start and end parameters default to give the last 7 days worth of hourly usage.
+        """
+        if not self._logged_in:
+            return None
+        stats_url = URL_SEGMENTS[HOURLY_STAT_URL]
+
+        if not end or end <= 0.0:
+            end = time.time()
+
+        # Shave the last hour, the controller seems to want this
+        # This is also in keeping with Art-of-Wifi's library
+        end = end - (end % 3600)
+
+        if not start or start >= end:
+            # Go to the beginning of this month
+            start_dt = datetime.datetime.fromtimestamp(end) - datetime.timedelta(7)
+            start = time.mktime(start_dt.timetuple())
+
+        # Time is in milliseconds since the Epoch
+        end *= 1000
+        start *= 1000
+
+        return self._get_stats(stats_url, start, end, stat_attributes=stat_attributes)
+
+    def get_minutely_stats(self,
+                           start: Union[float, None] = None,
+                           end: Union[float, None] = None,
+                           stat_attributes: list = None) -> Union[MutableSequence, None]:
+        """Will return either a list of time-sorted minutely stats or None.
+
+        The start and end parameters default to give the last 24 hours worth of 5-minute usage.
+        """
+        if not self._logged_in:
+            return None
+        stats_url = URL_SEGMENTS[MINUTELY_STAT_URL]
+
+        if not end or end <= 0.0:
+            end = time.time()
+
+        # Shave the last hour, the controller seems to want this
+        # This is also in keeping with Art-of-Wifi's library
+        end = end - (end % 3600)
+
+        if not start or start >= end:
+            # Go to the beginning of this month
+            start_dt = datetime.datetime.fromtimestamp(end) - datetime.timedelta(1)
+            start = time.mktime(start_dt.timetuple())
+
+        # Time is in milliseconds since the Epoch
+        end *= 1000
+        start *= 1000
+
+        return self._get_stats(stats_url, start, end, stat_attributes=stat_attributes)
+
+    def _get_stats(self,
+                   relative_url: str,
+                   start: Union[float, None] = None,
+                   end: Union[float, None] = None,
+                   stat_attributes: list = None) -> Union[MutableSequence, None]:
+        """Gets the stats out of the relative_url"""
+
+        if not stat_attributes:
+            stat_attributes = [
+                'wan-tx_bytes',
+                'wan-rx_bytes',
+                "time"
+            ]
+        if "time" not in stat_attributes:
+            stat_attributes.append("time")
 
         params = {
             "attrs": stat_attributes,
@@ -162,7 +243,7 @@ class Controller:
             "start": start
         }
 
-        data = self._write_to_api(stats_url, "POST", parameters=params)
+        data = self._write_to_api(relative_url, "POST", parameters=params)
 
         if not data:
             return None
@@ -173,13 +254,13 @@ class Controller:
 
         data = data["data"]
 
-        dailies = dict()
+        statistics = dict()
 
         for item in data:
             item_t = item.get("time", 0) / 1000 # Go Back to Seconds
             if item_t == 0:
                 continue
             item["time"] = item_t
-            dailies[item_t] = item
+            statistics[item_t] = item
 
-        return [dailies[key] for key in sorted(dailies.keys())]
+        return [statistics[key] for key in sorted(statistics.keys())]

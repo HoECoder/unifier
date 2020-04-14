@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Script to get daily reports out of the local controller"""
+"""Script to get hourly reports out of the local controller"""
 
 import os
 import sys
@@ -11,11 +11,11 @@ except ImportError:
     HAVE_DOT_ENV = False
 
 from unifierlib import Controller
-from unifierlib.utility import summarize_stats as summarize_dailies
+from unifierlib.utility import summarize_stats as summarize_hourlies
 
 from cli_lib import make_arg_parser
 
-PROGRAM_DESC = "Collect Daily Stats From the Controller"
+PROGRAM_DESC = "Collect Hourly Stats From the Controller"
 
 if HAVE_DOT_ENV:
     load_dotenv()
@@ -29,13 +29,11 @@ def summarize_stats(controller: Controller,
     if not controller.logged_in:
         return
 
-    stats = controller.get_daily_stats()
-    if not stats:
-        return
-    summarize_dailies(stats,
-                      DATETIME_FORMAT,
-                      do_json=do_json,
-                      do_list=do_list)
+    stats = controller.get_hourly_stats()
+    summarize_hourlies(stats,
+                       DATETIME_FORMAT,
+                       do_json=do_json,
+                       do_list=do_list)
 
 def main():
     """Main Entry Point"""
