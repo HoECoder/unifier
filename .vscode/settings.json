@@ -1,0 +1,11 @@
+{
+    "python.pythonPath": "/home/pi/unifier/venv/bin/python3",
+    "python.jediEnabled": true,
+    "python.jediPath": "/home/pi/unifier/venv/lib/python3.7/site-packages",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintUseMinimalCheckers": false,
+    "python.venvFolders": [
+        "/home/pi/unifier/venv"
+    ]
+}
