@@ -13,7 +13,7 @@ except ImportError:
 from unifierlib import Controller
 from unifierlib.utility import summarize_stats as summarize_hourlies
 
-from cli_lib import make_arg_parser
+import click
 
 PROGRAM_DESC = "Collect Hourly Stats From the Controller"
 
@@ -35,28 +35,52 @@ def summarize_stats(controller: Controller,
                        do_json=do_json,
                        do_list=do_list)
 
-def main():
-    """Main Entry Point"""
-    parser = make_arg_parser(PROGRAM_DESC)
-    args = parser.parse_args()
+@click.command()
+@click.option("--host", "-H", "host",
+              prompt=True,
+              envvar="UNIFI_HOST",
+              help="Hostname or IP address of the controller")
+@click.option("--port", "-p", "port",
+              envvar='UNIFI_PORT',
+              default=8443,
+              show_default=True,
+              help="Port number where the controller is hosting the API")
+@click.option("--user", "-u", "user",
+              envvar='UNIFI_USER',
+              prompt=True,
+              help="Username with privileges to the API")
+@click.option("--password", "--pass", "--pwd", "-P", "password",
+              envvar='UNIFI_PASSWD',
+              prompt=True,
+              required=True,
+              help="Password for the user")
+@click.option("--site", "-s", "site",
+              envvar='UNIFI_SITE',
+              default="default",
+              show_default=True,
+              help="Site name on the controller")
+@click.option("--json", "-j", "do_json",
+              default=False, is_flag=True,
+              help="Show all records in JSON format")
+@click.option("--list", "-l", "do_list",
+              default=False, is_flag=True,
+              help="Show all records in human format")
+def main(host, port, user, password, site, do_json, do_list):
+    """Gather hourly data usage stats from a Unfi Controller."""
 
-    if not args.password:
-        print("No password set!")
-        parser.print_help()
-        sys.exit(1)
-
-    controller = Controller(args.host,
-                            args.port,
-                            args.user,
-                            args.password,
-                            site=args.site,
+    controller = Controller(host,
+                            port,
+                            user,
+                            password,
+                            site=site,
                             ssl_verify=False)
     if not controller.logged_in:
         return
 
     summarize_stats(controller,
-                    do_json=args.json,
-                    do_list=args.list)
+                    do_json=do_json,
+                    do_list=do_list)
 
 if __name__ == "__main__":
+    #pylint: disable=no-value-for-parameter
     main()
