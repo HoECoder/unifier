@@ -8,13 +8,19 @@ from types import SimpleNamespace
 import requests
 import urllib3
 
+from unifierlib.utility import reorganize_site_data
+
 MAX_ERRORS = 1000
 
 DAILY_STAT_URL = "daily"
 HOURLY_STAT_URL = "hourly"
 MINUTELY_STAT_URL = "minutely"
+SITE_STATS_SIMPLE_URL = "site_stats_simple"
+SITE_STATS_DETAIL_URL = "site_stats_detailed"
 
 URL_SEGMENTS = {
+    SITE_STATS_SIMPLE_URL: 'api/self/sites',
+    SITE_STATS_DETAIL_URL: 'api/stat/sites',
     DAILY_STAT_URL: 'stat/report/daily.site',
     HOURLY_STAT_URL: 'stat/report/hourly.site',
     MINUTELY_STAT_URL: 'stat/report/5minutes.site'
@@ -106,6 +112,15 @@ class Controller:
         if not self._logged_in:
             return None
         url = f'{self._config.root_url}/api/s/{self._config.site}/{relative_url}'
+        return self._write(url, method, parameters)
+
+    def _write(self,
+               url: str,
+               method: str,
+               parameters: Union[dict, None] = None) -> Union[MutableMapping, None]:
+
+        if not self._logged_in:
+            return None
 
         _method = self._session.post
         if method == "GET":
@@ -123,12 +138,22 @@ class Controller:
             pass
         if not response.ok:
             response.close()
-            self._push_error(relative_url,
+            self._push_error(url,
                              response,
                              "POST",
                              parameters=parameters)
 
         return data
+
+    def site_info_simplified(self) -> Union[MutableSequence, None]:
+        """Will get basic info about the sites on the controller"""
+        url = f'{self._config.root_url}/{URL_SEGMENTS[SITE_STATS_SIMPLE_URL]}'
+        return reorganize_site_data(self._write(url, "GET"))
+
+    def site_info_detailed(self) -> Union[MutableSequence, None]:
+        """Will get basic info about the sites on the controller"""
+        url = f'{self._config.root_url}/{URL_SEGMENTS[SITE_STATS_DETAIL_URL]}'
+        return reorganize_site_data(self._write(url, "GET"))
 
     def get_daily_stats(self,
                         start: Union[float, None] = None,

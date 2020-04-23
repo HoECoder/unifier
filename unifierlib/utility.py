@@ -2,7 +2,7 @@
 
 import json
 import time
-from typing import Tuple
+from typing import Union, Tuple, MutableMapping
 
 WAN_TX_KEY = "wan-tx_bytes"
 WAN_RX_KEY = "wan-rx_bytes"
@@ -109,3 +109,19 @@ def summarize_stats(stats: dict,
         print(f'Total: Up: {total_tx}; Down: {total_rx}; Total: {total}')
     else:
         print(json.dumps(stats))
+
+def reorganize_site_data(data: MutableMapping) -> Union[None, MutableMapping]:
+    """Attempts to reorganize the site data in a more helpful way, as a dict by name of the site"""
+    if not data:
+        return None
+    if not 'meta' in data:
+        return data
+
+    if data['meta'] != {"rc": "ok"}:
+        return data
+
+    data = data["data"]
+
+    sites_dict = {site["name"]: site for site in data}
+
+    return sites_dict
