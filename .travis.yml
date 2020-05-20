@@ -1,0 +1,12 @@
+language: python
+python:
+  - "3.7"
+install:
+    - pip3 install -r requirements.txt
+    - pip3 install pylint
+jobs:
+    include:
+        - stage: lint
+          script: python3 -m pylint unifierlib
+        - stage: test
+          script: python3 -m unittest discover -v -s ./tests -p 'test*.py'

@@ -68,7 +68,8 @@ class Controller:
                     url: str,
                     response: requests.Response,
                     method: str,
-                    parameters: Any = None):
+                    parameters: Any = None,
+                    exception: Any = None):
         while len(self._error_stack) >= MAX_ERRORS:
             self._error_stack.pop(0)
 
@@ -76,7 +77,8 @@ class Controller:
             "url": url,
             "response": response,
             "method": method,
-            "parameters": parameters
+            "parameters": parameters,
+            "exception": exception
         }
         stack_entry = SimpleNamespace(**stack_entry)
 
@@ -91,7 +93,16 @@ class Controller:
 
         login_url = f"{self._config.root_url}/api/login"
 
-        result = self._session.post(login_url, json=params)
+        try:
+            result = self._session.post(login_url, json=params)
+        except requests.ConnectionError as con_err:
+            self._logged_in = False
+            self._push_error(login_url,
+                             None,
+                             "POST",
+                             parameters=params,
+                             exception=con_err)
+            raise con_err
 
         if not result.ok:
             self._logged_in = False

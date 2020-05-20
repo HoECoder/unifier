@@ -26,10 +26,11 @@ def humanize_bytes(size: float) -> Tuple[float, str]:
     """Returns bytes in a humanized form"""
     scaling = -1
     unit = "B"
+    check_size = abs(size)
     # pylint: disable=dict-iter-missing-items
     # The keys of SCALING_FACTORS are tuples
     for lower, upper in SCALING_FACTORS:
-        if lower <= size < upper:
+        if lower <= check_size < upper:
             scaling, unit = SCALING_FACTORS[(lower, upper)]
             break
     if scaling == -1:
@@ -120,8 +121,10 @@ def reorganize_site_data(data: MutableMapping) -> Union[None, MutableMapping]:
     if data['meta'] != {"rc": "ok"}:
         return data
 
-    data = data["data"]
+    dat = data.get("data", None)
+    if dat is None:
+        return data
 
-    sites_dict = {site["name"]: site for site in data}
+    sites_dict = {site["name"]: site for site in dat if site.get("name")}
 
     return sites_dict
