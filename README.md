@@ -1,4 +1,4 @@
-# unifier
+# unifier [![Build Status](https://travis-ci.org/HoECoder/unifier.svg)](https://travis-ci.org/HoECoder/unifier)
 Series of tools for interacting with a Ubiquiti Unifi Controller.
 
 This was inspired by [Art-of-Wifi](https://github.com/Art-of-WiFi)'s 
